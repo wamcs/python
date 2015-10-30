@@ -3,13 +3,13 @@ import re
 import os
 ##简书爬虫
 class Spider:
-    def _init_(self):
+    def __init__(self):
         self.__page=''
         self.__urlList=[]
         self.__url=''
-        self.__storagePath='C:\Users\凯\Desktop\spiderStorage'
-        self.__articlePath='C:\Users\凯\Desktop\spiderStorage\Articles'
-        self.__picturePath='C:\Users\凯\Desktop\spiderStorage\Pictures'
+        self.__storagePath='F:\spiderStorage'
+        self.__articlePath='F:\spiderStorage\Articles'
+        self.__picturePath='F:\spiderStorage\Pictures'
     def setURl(self,url):
         self.__url=url
     def openUrl(self,url):
@@ -22,7 +22,7 @@ class Spider:
         pattern=re.compile(b'<h4 class="title"><a target="_blank" href="/(\w/\w+)">')
         urls=re.findall(pattern,string)
         for url in urls:
-            temp=bytes.decode(url)
+            temp=url.decode('utf-8')
             urllist.append(self.__page+'/'+temp)
         self.__urlList=urllist
         print(self.__urlList[0])
@@ -33,16 +33,16 @@ class Spider:
         picturePattern=re.compile(b'<img src="(.*?)"')
         imageChaptionPattern=re.compile(b'<div class="image-caption">(\w+)</div>')
         title=re.findall(titlePattern,page)
-        f=open(self.__articlePath+'\\'+bytes.decode(title)+'.md','wb')
+        f=open(self.__articlePath+'\\'+title.decode('utf-8')+'.md','wb')
         author=re.findall(authorPattern,page)
         contents=re.findall(contentPattern,page)
         pictures=re.findall(picturePattern,page)
         imageChaptions=re.findall(imageChaptionPattern,page)
-        f.write('##'+bytes.decode(title)+'\n###'+bytes.decode(author)+'\n')
+        f.write('##'+title.decode('utf-8')+'\n###'+author.decode('utf-8')+'\n')
         for item in contents:
-            f.write(bytes.decode(item)+'\n')
+            f.write(item.decode('utf-8')+'\n')
         for pic,chap in pictures,imageChaptions:
-            f.write(self.getImage(bytes.decode(pic),bytes.decode(chap)))
+            f.write(self.getImage(pic.decode('utf-8'),chap.decode('utf-8')))
             f.close()
         self.saveImage(pictures,author)
     def getImage(self,picture,imageChaption):
@@ -51,12 +51,12 @@ class Spider:
     def saveImage(self,pictures,author):
         i=1
         for item in pictures:
-            temp=bytes.decode(item)
+            temp=item.decode('utf-8')
             pic=urllib.request.urlopen(temp)
             f=open(self.__picturePath+'\\'+author+i+'.jpg','wb')
             f.write(pic.read())
             f.close()
-            i++
+            i=i+1
     def start(self,url):
         os.mkdir(self.__storagePath)
         os.mkdir(self.__articlePath)
