@@ -14,57 +14,61 @@ class Spider:
         self.__url=url
     def openUrl(self,url):
         response=urllib.request.urlopen(url)
-        self.__page=response.read()
+        self.__page=response.read().decode('utf-8')
     def getPage(self):
         return self.__page
     def geturlList(self,string):
         urllist=[]
-        pattern=re.compile(b'<h4 class="title"><a target="_blank" href="/(\w/\w+)">')
+        pattern=re.compile('<h4 class="title"><a target="_blank" href="/(\w/\w+)">')
         urls=re.findall(pattern,string)
         for url in urls:
-            temp=url.decode('utf-8')
-            urllist.append(self.__page+'/'+temp)
+            urllist.append(self.__url+'/'+url)
         self.__urlList=urllist
-        print(self.__urlList[0])
     def getContent(self,page):
-        titlePattern=re.compile(b'class="title">(\w+)<')
-        authorPattern=re.compile(b'"author-name blue-link".*?<span>(\w+)</span>')
-        contentPattern=re.compile(b'<p>(\w+)</p>')
-        picturePattern=re.compile(b'<img src="(.*?)"')
-        imageChaptionPattern=re.compile(b'<div class="image-caption">(\w+)</div>')
-        title=re.findall(titlePattern,page)
-        f=open(self.__articlePath+'\\'+title.decode('utf-8')+'.md','wb')
-        author=re.findall(authorPattern,page)
+        ##print(page)
+        titlePattern=re.compile('<h1 class="title">(.*)</h1>')
+        authorPattern=re.compile('<a class="author-name blue-link".*?>\s*<span>(.*)</span>\s*</a>')
+        contentPattern=re.compile('<p>(.*)</p>')
+        picturePattern=re.compile('<img.*?src="(.*?)"')
+        imageChaptionPattern=re.compile('<div class="image-caption">(\w+)</div>')
+        title=re.search(titlePattern,page)
+        title=re.sub('\s+','',title.groups()[0])
+        ##print(title)
+        f=open(self.__articlePath+'\\'+title+'.md','w',encoding='utf-8')
+        author=re.search(authorPattern,page)
         contents=re.findall(contentPattern,page)
         pictures=re.findall(picturePattern,page)
-        imageChaptions=re.findall(imageChaptionPattern,page)
-        f.write('##'+title.decode('utf-8')+'\n###'+author.decode('utf-8')+'\n')
+        ##print(author.groups()[0])
+        f.write('##'+title+'\n###'+author.groups()[0]+'\n')
         for item in contents:
-            f.write(item.decode('utf-8')+'\n')
-        for pic,chap in pictures,imageChaptions:
-            f.write(self.getImage(pic.decode('utf-8'),chap.decode('utf-8')))
-            f.close()
-        self.saveImage(pictures,author)
-    def getImage(self,picture,imageChaption):
-        return '!['+imageChaption+']('+picture+')'
-
+            item=item.replace('<p>','  ').replace('</p>','\n\n').replace('<br>','\n\n')
+            item=re.sub('<[ /]?b>','**',item)
+            ##print(item)
+            f.write(item)
+        for i in range(0,len(pictures)):
+            f.write(self.getImage(pictures[i])+'\n\n')
+        f.close()
+        self.saveImage(pictures,author.groups()[0])
+    def getImage(self,picture):
+        return '![picture]('+picture+')'
     def saveImage(self,pictures,author):
         i=1
         for item in pictures:
-            temp=item.decode('utf-8')
-            pic=urllib.request.urlopen(temp)
-            f=open(self.__picturePath+'\\'+author+i+'.jpg','wb')
+            pic=urllib.request.urlopen(item)
+            f=open(self.__picturePath+'\\'+author+str(i)+'.jpg','wb')
             f.write(pic.read())
             f.close()
             i=i+1
     def start(self,url):
-        os.mkdir(self.__storagePath)
-        os.mkdir(self.__articlePath)
-        os.mkdir(self.__picturePath)
+        if not os.path.exists(self.__storagePath):
+            os.mkdir(self.__storagePath)
+            os.mkdir(self.__articlePath)
+            os.mkdir(self.__picturePath)
         self.setURl(url)
         self.openUrl(self.__url)
         self.geturlList(self.getPage())
         for item in self.__urlList:
             response=urllib.request.urlopen(item)
-            page=response.read()
+            page=response.read().decode('utf-8')
             self.getContent(page)
+            ##print(page)
